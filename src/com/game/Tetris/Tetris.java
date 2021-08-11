@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.Random;
 
 public class Tetris extends JFrame implements KeyListener {
 
@@ -21,6 +22,14 @@ public class Tetris extends JFrame implements KeyListener {
     JLabel label1;
     //是否启动
     Boolean isRunning;
+    //用于存储当前方块的数组
+    int[] allRect;
+    //用于存储方块的变量
+    int rect;
+    //方块的坐标,起始下落的位置
+    int x,y;
+    //线程休眠的时间，每下落到底层停顿以下
+    int time = 1000;
 
     public void initWindow(){
         //初始化窗口大小
@@ -35,6 +44,8 @@ public class Tetris extends JFrame implements KeyListener {
         this.setTitle("俄罗斯方块");
         //设置窗口大小不可变
         this.setResizable(false);
+
+
 
     }
 
@@ -67,7 +78,7 @@ public class Tetris extends JFrame implements KeyListener {
         this.add(game_main,BorderLayout.CENTER);
 
     }
-
+    //初始化左右两侧的解释界面
     public void initExplainPanel(){
         //创建左右说明面板
         Panel game_explain_left = new Panel();
@@ -91,7 +102,7 @@ public class Tetris extends JFrame implements KeyListener {
 
     }
     //开始游戏
-    public void startGame(){
+    public void startGame() throws InterruptedException {
         while (true){
             //判断游戏是否结束
             if(!isRunning){  //如果false
@@ -104,9 +115,90 @@ public class Tetris extends JFrame implements KeyListener {
         }
     }
     //游戏进行的方法
-    private void game_running() {
+    private void game_running() throws InterruptedException {
+        //调用方法方块生成
+        randomRect();
+        //设置初始坐标
+        x = 0;
+        y = 5;
+        for (int i = 0; i < game_x; i++) {
+            Thread.sleep(time);
+            //判断方块是否可以下落
+            if(!canFall(x,y)){
+                //data置为1，表示方块占用
+                changeData(x,y);
+                //循环遍历4层，看看能够消除的行数
+                for (int j = x; j < x+4; j++) {
+                    //如果列数为满列，则消除
+                    int sum = 0;
+                    //统计每一行是否为满行  ，统计1的个数
+                    for (int k = 0; k <= (game_y-2); k++) {
+                        if(data[j][k]==1){
+                            sum++;
+                        }
+                    }
+                    //如果为满行，则删除
+                    if(sum==(game_y-2)){
+                        removeRow(j);
+                    }
+                }
+                //判断游戏是否失败  只需要查看第四行是否有方块  ？？？？？？？？？？
+                for (int j = 0; j < (game_y-2); j++) {
+                    if(data[3][j]==1){
+                        isRunning=false;
+                        break;
+                    }
+                }
+                break;
+
+            }else {
+                //层数加一
+                x++;
+                //方块下落一格
+                fall(x,y);
+            }
+        }
+    }
+
+    //删除行
+    public void removeRow(int j) {
+    }
+
+    //判断方块是否能够下落
+    public boolean canFall(int m,int n){
+        //定义变量
+        int temp = 0x8000;
+        //遍历整个4*4的表格
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                if((temp&rect)!=0){
+                    //判断该位置的下一行是否有方块
+                    if(data[m+1][n]==1){
+                        return false;
+                    }
+                }
+                n++;
+                temp >>= 1;
+            }
+            m++;
+            n = n-4;
+        }
+        //可以下落
+        return true;
+    }
+    //游戏下落一行
+    public void fall(int m,int n){
 
     }
+
+    //生成游戏随机下落的方块
+    public void randomRect(){
+        Random random = new Random();
+        rect = allRect[random.nextInt(22)];
+
+    }
+
+
 
     //无参构造
     public Tetris(){
@@ -118,6 +210,11 @@ public class Tetris extends JFrame implements KeyListener {
         initExplainPanel();
         initWindow();  //????????为什么在无参构造添加方法
         isRunning = true;
+        allRect = new int[]{0x00cc,0x8888,0x000f,0x888f,0xf888,0xf111,0x111f,0xffff,0x0008,
+                0x0888,0x000e,0x0088,0x000c,0x08c8,0x00e4,0x04c4,0x004e,0x08c4,
+                0x006c,0x04c8,0x00c6};  //设置图形所有的形状
+        
+
 
     }
 
