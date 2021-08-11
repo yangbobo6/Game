@@ -30,7 +30,12 @@ public class Tetris extends JFrame implements KeyListener {
     int x,y;
     //线程休眠的时间，每下落到底层停顿以下
     int time = 1000;
+    //游戏得分
+    int score = 0;
 
+
+
+    //初始化窗口
     public void initWindow(){
         //初始化窗口大小
         this.setSize(600,850);
@@ -48,7 +53,6 @@ public class Tetris extends JFrame implements KeyListener {
 
 
     }
-
     //游戏的主页面  初始化游戏页面
     public void initGamePanel(){
         JPanel game_main = new JPanel();
@@ -115,7 +119,7 @@ public class Tetris extends JFrame implements KeyListener {
         }
     }
     //游戏进行的方法
-    private void game_running() throws InterruptedException {
+    public void game_running() throws InterruptedException {
         //调用方法方块生成
         randomRect();
         //设置初始坐标
@@ -124,7 +128,8 @@ public class Tetris extends JFrame implements KeyListener {
         for (int i = 0; i < game_x; i++) {
             Thread.sleep(time);
             //判断方块是否可以下落
-            if(!canFall(x,y)){
+            if(!canFall(x,y)){    //不能下落
+
                 //data置为1，表示方块占用
                 changeData(x,y);
                 //循环遍历4层，看看能够消除的行数
@@ -142,15 +147,15 @@ public class Tetris extends JFrame implements KeyListener {
                         removeRow(j);
                     }
                 }
-                //判断游戏是否失败  只需要查看第四行是否有方块  ？？？？？？？？？？
+                //判断游戏是否失败  只需要查看第四行是否有方块  ？？？？？？？？？？ 不封顶就结束
                 for (int j = 0; j < (game_y-2); j++) {
                     if(data[3][j]==1){
                         isRunning=false;
+                        System.out.println(1);
                         break;
                     }
                 }
                 break;
-
             }else {
                 //层数加一
                 x++;
@@ -159,23 +164,71 @@ public class Tetris extends JFrame implements KeyListener {
             }
         }
     }
-
-    //删除行
-    public void removeRow(int j) {
+    //删除行,然后上一行的掉落下来
+    public void removeRow(int row) {
+        int temp_score = 100;
+        //仍然使用此方法  移位的方式进行比对
+        for (int i = row; i >1 ; i--) {
+            for (int j = 1; j < (game_y-2); j++) {
+                data[i+1][j] = data[i][j];
+            }
+        }
+        //刷新游戏区域
+        refresh(row);
+        //方块加速
+        if(time > temp_score){
+            time = time - temp_score;
+        }
+        //得分
+        score += temp_score;
+        //显示得分
+        label1.setText("游戏得分："+score);
     }
-
-    //判断方块是否能够下落
+    //刷新移除某一行后   的方法
+    public void refresh(int row) {
+        //遍历row以上的游戏区域   抵消行的上面会发生变化
+        for (int i = row; i >1 ; i--) {
+            for (int j = 0; j < (game_y-2); j++) {
+                if(data[i][j]==1){
+                    text[i][j].setBackground(Color.BLUE);
+                }else {
+                    text[i][j].setBackground(Color.white);
+                }
+            }
+        }
+    }
+    //判断方块是否能够下落   **难理解  认证看**
     public boolean canFall(int m,int n){
         //定义变量
         int temp = 0x8000;
         //遍历整个4*4的表格
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
+                //用0x8000的不断右移动一位与rect的图形相比较，如果有方块就去判断下一行的data值是否为1 ？？？？？？？？？？？？？
+                //判断图形的具体形状，都为1才是1
                 if((temp&rect)!=0){
-                    //判断该位置的下一行是否有方块
+                    //判断该位置的下一行是否有方块  保证每个都能判断到
                     if(data[m+1][n]==1){
                         return false;
                     }
+                }
+                n++;   //下一行全部判断
+                temp >>= 1;  //右移
+            }
+            m++;
+            n = n-4;  // 这两行：列归位，下一行检测
+        }
+        //可以下落
+        return true;
+    }
+
+    //改变不可下降的方块的区域和值的方法
+    public void changeData(int m, int n) {
+        int temp = 0x8000;
+        for (int i = 0; i <4 ; i++) {
+            for (int j = 0; j < 4; j++) {
+                if((temp & rect) !=0){
+                    data[m][n] = 1;
                 }
                 n++;
                 temp >>= 1;
@@ -183,19 +236,51 @@ public class Tetris extends JFrame implements KeyListener {
             m++;
             n = n-4;
         }
-        //可以下落
-        return true;
     }
+
     //游戏下落一行
     public void fall(int m,int n){
-
+        if(m>0){
+            clear(m-1,n);
+        }
+        //重新绘制下一个图形
+        draw(m,n);
     }
 
+    //清除上一层的方块
+    public void clear(int m,int n){
+        int temp = 0x8000;
+        for (int i = 0; i <4 ; i++) {
+            for (int j = 0; j < 4; j++) {
+                if((temp & rect) !=0){
+                    text[m][n].setBackground(Color.white);
+                }
+                n++;
+                temp >>= 1;
+            }
+            m++;
+            n = n-4;
+        }
+    }
+    //重新绘制出现的方块
+    public void draw(int m,int n){
+        int temp = 0x8000;
+        for (int i = 0; i <4 ; i++) {
+            for (int j = 0; j < 4; j++) {
+                if((temp & rect) !=0){
+                    text[m][n].setBackground(Color.BLUE);
+                }
+                n++;
+                temp >>= 1;
+            }
+            m++;
+            n = n-4;
+        }
+    }
     //生成游戏随机下落的方块
     public void randomRect(){
         Random random = new Random();
         rect = allRect[random.nextInt(22)];
-
     }
 
 
@@ -220,8 +305,9 @@ public class Tetris extends JFrame implements KeyListener {
 
 
     //启动项目
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Tetris tetris = new Tetris();
+        tetris.game_running();
     }
 
 
