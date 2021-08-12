@@ -114,9 +114,10 @@ public class Tetris extends JFrame implements KeyListener {
             }
             //进行游戏
             game_running();
-            //游戏结束
-            label.setText("游戏结束");
+            System.out.println("结束");
         }
+        //游戏结束
+        label.setText("游戏结束");
     }
     //游戏进行的方法
     public void game_running() throws InterruptedException {
@@ -148,13 +149,14 @@ public class Tetris extends JFrame implements KeyListener {
                     }
                 }
                 //判断游戏是否失败  只需要查看第四行是否有方块  ？？？？？？？？？？ 不封顶就结束
-                for (int j = 0; j < (game_y-2); j++) {
+                for (int j = 1; j <= (game_y-2); j++) {
                     if(data[3][j]==1){
+                        System.out.println(data[3][j]);
                         isRunning=false;
-                        System.out.println(1);
                         break;
                     }
                 }
+                System.out.println("1111");
                 break;
             }else {
                 //层数加一
@@ -206,7 +208,7 @@ public class Tetris extends JFrame implements KeyListener {
             for (int j = 0; j < 4; j++) {
                 //用0x8000的不断右移动一位与rect的图形相比较，如果有方块就去判断下一行的data值是否为1 ？？？？？？？？？？？？？
                 //判断图形的具体形状，都为1才是1
-                if((temp&rect)!=0){
+                if((temp & rect)!=0){
                     //判断该位置的下一行是否有方块  保证每个都能判断到
                     if(data[m+1][n]==1){
                         return false;
@@ -295,19 +297,15 @@ public class Tetris extends JFrame implements KeyListener {
         initExplainPanel();
         initWindow();  //????????为什么在无参构造添加方法
         isRunning = true;
-        allRect = new int[]{0x00cc,0x8888,0x000f,0x888f,0xf888,0xf111,0x111f,0xffff,0x0008,
+        allRect = new int[]{0x00cc,0x8888,0x000f,0x888f,0xf888,0xf111,0x111f,0x0eee,0xffff,0x0008,
                 0x0888,0x000e,0x0088,0x000c,0x08c8,0x00e4,0x04c4,0x004e,0x08c4,
                 0x006c,0x04c8,0x00c6};  //设置图形所有的形状
-        
-
-
     }
-
 
     //启动项目
     public static void main(String[] args) throws InterruptedException {
         Tetris tetris = new Tetris();
-        tetris.game_running();
+        tetris.startGame();
     }
 
 
