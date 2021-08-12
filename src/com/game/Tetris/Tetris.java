@@ -311,11 +311,122 @@ public class Tetris extends JFrame implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {
+        //控制方块的变形
+        if(e.getKeyChar()==KeyEvent.VK_SPACE){
+            //判断游戏是否结束
+            if(!isRunning){
+                return;
+            }
 
+            //定义变量存储当前的索引
+            int old;
+            for (old = 0; old < allRect.length; old++) {
+                if(rect == allRect[old]){
+                    break;
+                }
+            }
+            //定义变量，存储变形后的方块
+            int next;
+
+
+        }
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
+
+        //判断是否是左键   左键 = 37          左移动操作--------------------
+        if(e.getKeyCode() == 37){
+            if(!isRunning){ //不运行，不起作用
+                return;
+            }
+
+            //为什么这么写  ？？？？？
+            if(y <= 1){      //是否碰到左墙壁
+                return;
+            }
+            //判断周围是否有砖块
+            int temp = 0x8000;
+            for (int i = x; i < x+4; i++) {
+                for (int j = y; j < y+4; j++) {
+                    if ((temp & rect) != 0) {
+                        if (data[i][j-1] == 1) {
+                            return;
+                        }
+                    }
+                    temp >>= 1;
+                }
+            }
+            //屏幕显示  先消失后出现
+            clear(x,y);
+            y--;
+            draw(x,y);
+        }
+
+        //  右移动操作  ------------------------------
+        if(e.getKeyCode()==39){
+            //不运行了
+            if(!isRunning){
+                return;
+            }
+            //定义变量
+            int temp = 0x8000;
+            int m = x;
+            int n = y;
+            //存储最右边的坐标值
+            int num = 1;
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    if((temp & rect)!= 0){
+                        if(n > num){
+                            num = n;
+                        }
+                    }
+                    n++;
+                    temp >>= 1;
+                }
+                m++;
+                n = n-4;
+            }
+            //判断是否碰到右墙壁
+            if(num>=(game_y-2)){
+                return;
+            }
+            //是否碰到别的方块
+            temp = 0x8000;
+            for (int i = x; i < x+4; i++) {
+                for (int j = y; j < y+4; j++) {
+                    if ((temp & rect) != 0) {
+                        if (data[i][j+1] == 1) {
+                            return;
+                        }
+                    }
+                    temp >>= 1;
+                }
+            }
+            //清除当前方块，显示下一个
+            clear(x,y);
+            y++;
+            draw(x,y);
+        }
+
+        //键盘下落  ------------------------------------------
+        if(e.getKeyCode()==40){  //箭头下
+            //查看是否正在运行
+            if(!isRunning){
+                return;
+            }
+
+            //判断是否能够下落
+            if(!canFall(x,y)){
+                return;
+            }else {
+                clear(x,y);
+                x++;
+                draw(x,y);
+            }
+
+        }
 
     }
 
