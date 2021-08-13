@@ -32,7 +32,10 @@ public class Tetris extends JFrame implements KeyListener {
     int time = 1000;
     //游戏得分
     int score = 0;
-
+    //增加暂停功能
+    boolean game_pause = false;
+    //记录按下暂停键的次数
+    int pause_time = 0;
 
 
     //初始化窗口
@@ -127,42 +130,49 @@ public class Tetris extends JFrame implements KeyListener {
         x = 0;
         y = 5;
         for (int i = 0; i < game_x; i++) {
+            //线程等待1s
             Thread.sleep(time);
-            //判断方块是否可以下落
-            if(!canFall(x,y)){    //不能下落
+            //游戏一致运行，不断重复循环
+            if(game_pause){
+                i--;
+                System.out.println("检查游戏是否一直运行");
+            }else {
+                //判断方块是否可以下落
+                if(!canFall(x,y)){    //不能下落
 
-                //data置为1，表示方块占用
-                changeData(x,y);
-                //循环遍历4层，看看能够消除的行数
-                for (int j = x; j < x+4; j++) {
-                    //如果列数为满列，则消除
-                    int sum = 0;
-                    //统计每一行是否为满行  ，统计1的个数
-                    for (int k = 0; k <= (game_y-2); k++) {
-                        if(data[j][k]==1){
-                            sum++;
+                    //data置为1，表示方块占用
+                    changeData(x,y);
+                    //循环遍历4层，看看能够消除的行数
+                    for (int j = x; j < x+4; j++) {
+                        //如果列数为满列，则消除
+                        int sum = 0;
+                        //统计每一行是否为满行  ，统计1的个数
+                        for (int k = 0; k <= (game_y-2); k++) {
+                            if(data[j][k]==1){
+                                sum++;
+                            }
+                        }
+                        //如果为满行，则删除
+                        if(sum==(game_y-2)){
+                            removeRow(j);
                         }
                     }
-                    //如果为满行，则删除
-                    if(sum==(game_y-2)){
-                        removeRow(j);
+                    //判断游戏是否失败  只需要查看第四行是否有方块  ？？？？？？？？？？ 不封顶就结束
+                    for (int j = 1; j <= (game_y-2); j++) {
+                        if(data[3][j]==1){
+                            System.out.println(data[3][j]);
+                            isRunning=false;
+                            break;
+                        }
                     }
+                    System.out.println("1111");
+                    break;
+                }else {
+                    //层数加一
+                    x++;
+                    //方块下落一格
+                    fall(x,y);
                 }
-                //判断游戏是否失败  只需要查看第四行是否有方块  ？？？？？？？？？？ 不封顶就结束
-                for (int j = 1; j <= (game_y-2); j++) {
-                    if(data[3][j]==1){
-                        System.out.println(data[3][j]);
-                        isRunning=false;
-                        break;
-                    }
-                }
-                System.out.println("1111");
-                break;
-            }else {
-                //层数加一
-                x++;
-                //方块下落一格
-                fall(x,y);
             }
         }
     }
@@ -223,7 +233,6 @@ public class Tetris extends JFrame implements KeyListener {
         //可以下落
         return true;
     }
-
     //改变不可下降的方块的区域和值的方法
     public void changeData(int m, int n) {
         int temp = 0x8000;
@@ -239,7 +248,6 @@ public class Tetris extends JFrame implements KeyListener {
             n = n-4;
         }
     }
-
     //游戏下落一行
     public void fall(int m,int n){
         if(m>0){
@@ -248,7 +256,6 @@ public class Tetris extends JFrame implements KeyListener {
         //重新绘制下一个图形
         draw(m,n);
     }
-
     //清除上一层的方块
     public void clear(int m,int n){
         int temp = 0x8000;
@@ -286,8 +293,7 @@ public class Tetris extends JFrame implements KeyListener {
     }
 
 
-
-    //无参构造
+    //无参构造   构造方法启动等*********************
     public Tetris(){
         text = new JTextArea[game_x][game_y];  //初始化
         data = new int[game_x][game_y];
@@ -308,13 +314,36 @@ public class Tetris extends JFrame implements KeyListener {
         tetris.startGame();
     }
 
-
     @Override
     public void keyTyped(KeyEvent e) {
+        //控制游戏是否暂停
+        if(e.getKeyChar()=='p'){
+
+            if(!isRunning){
+                return;
+            }
+            pause_time++;
+            //判断按下一次，暂停
+            if(pause_time==1){
+                game_pause = true;
+                label.setText("游戏暂停中");
+            }
+            if(pause_time==2){
+                game_pause = false;
+                pause_time = 0;
+                label.setText("游戏状态：正在进行中！");
+            }
+        }
+
+
         //控制方块的变形
         if(e.getKeyChar()==KeyEvent.VK_SPACE){
             //判断游戏是否结束
             if(!isRunning){
+                return;
+            }
+            //判断游戏是否暂停
+            if(game_pause){
                 return;
             }
 
@@ -327,9 +356,91 @@ public class Tetris extends JFrame implements KeyListener {
             }
             //定义变量，存储变形后的方块
             int next;
+            //方块变形还是方块
+            if(old==0||old==7||old==8||old==9){
+                return;
+            }
+            //之后方块需要变形，先清除当前方块
+            clear(x,y);
+
+            //1和2是相互变换的
+            if(old == 1||old == 2){
+                next = allRect[old == 1?2:1];
+                //判断是否可以变形  在墙边会发生穿透现象
+                if(canTurn(next,x,y)){
+                    rect = next;
+                }
+            }
 
 
+            //3，4，5，6是循环变形的
+            if(old >= 3&&old <= 6){
+                next = allRect[old+1>6?3:old+1];
+                //判断能不能变形
+                if(canTurn(next,x,y)){
+                    rect = next;
+                }
+            }
+
+            //10变成11  11变成10
+            if(old==10||old==11){
+                next = allRect[old == 10?11:10];
+                if(canTurn(next,x,y)){
+                    rect = next;
+                }
+            }
+
+            if(old==12||old==13){
+                next = allRect[old == 12?13:12];
+                if(canTurn(next,x,y)){
+                    rect = next;
+                }
+            }
+
+            //14 - 17是循环变形的
+            if(old >= 14&&old <= 17){
+                next = allRect[old+1>17?14:old+1];
+                //判断能不能变形
+                if(canTurn(next,x,y)){
+                    rect = next;
+                }
+            }
+            //18 和 19是循环变形
+            if(old==18||old==19){
+                next = allRect[old == 18?19:18];
+                if(canTurn(next,x,y)){
+                    rect = next;
+                }
+            }
+            //20 21 变形
+            if(old==20||old==21){
+                next = allRect[old == 20?21:20];
+                if(canTurn(next,x,y)){
+                    rect = next;
+                }
+            }
+            //绘制变形后的
+            draw(x,y);
         }
+    }
+
+    //判断方块是否可以变形  规则： 变形后的方块确保所占用的都是空的，如果存在1，则不能变形
+    public boolean canTurn(int a,int m,int n){
+        int temp = 0x8000;
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                if((temp&a)!=0){
+                    if(data[m][n]==1){
+                        return false;
+                    }
+                }
+                n++;
+                temp >>= 1;
+            }
+            m++;
+            n = n-4;
+        }
+        return true;
     }
 
     @Override
@@ -338,6 +449,10 @@ public class Tetris extends JFrame implements KeyListener {
         //判断是否是左键   左键 = 37          左移动操作--------------------
         if(e.getKeyCode() == 37){
             if(!isRunning){ //不运行，不起作用
+                return;
+            }
+            //判断游戏是否暂停
+            if(game_pause){
                 return;
             }
 
@@ -369,6 +484,11 @@ public class Tetris extends JFrame implements KeyListener {
             if(!isRunning){
                 return;
             }
+            //判断游戏是否暂停
+            if(game_pause){
+                return;
+            }
+
             //定义变量
             int temp = 0x8000;
             int m = x;
@@ -414,6 +534,10 @@ public class Tetris extends JFrame implements KeyListener {
         if(e.getKeyCode()==40){  //箭头下
             //查看是否正在运行
             if(!isRunning){
+                return;
+            }
+            //判断游戏是否暂停
+            if(game_pause){
                 return;
             }
 
